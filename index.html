@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<title>WP Config Snapshots Framework</title>
+<xmp theme="spacelab" style="display:none;">
+##Data migrations for WordPress instances
+
+WP Config Snapshots allows you to create data migrations for a WordPress installation with minimal code. The framework ships
+with an Active Plugins migration utility, which you can examine to see how to build your own. Below is a quick breakdown of the
+composition and process behind adding a snapshot module:
+
+###Main plugin file
+
+The main plugin file is responsible for two things:
+
+*   Registering a snapshot module with the snapshots framework, and
+*   Telling the framework where to render the ui for creating and restoring snapshots of the type your module will manage
+
+In the Active Plugins implementation, the main plugin file
+([plugin_snapshots.php](https://github.com/beezee/wp_config_snapshots/blob/master/plugin_snapshots.php)) looks like this:
+
+    class PluginSnapshotPlugin
+    {
+        public static function initialize()
+        {
+            $p = WPConfigSnapshotPlugin::instance();
+            require_once(dirname(__FILE__).'/PluginSnapshot.php');
+            $ps = new PluginSnapshot();
+            add_action('pre_current_active_plugins', array($ps, 'call_render_ui'));
+            $p->register_snapshot_module($ps);
+        }
+    }
+    
+    add_action('config_snapshot_plugin_loaded', array('PluginSnapshotPlugin', 'initialize'));
+    
+The first thing to note is the hook used to call the initialize method. _config\_snapshot\_plugin\_loaded_ is the hook fired
+when the framework is required by WordPress. This ensures you can interact with the snapshots framework from your plugin.
+
+Once the config\_snapshot\_plugin\_loaded action fires, the initialize method starts by accessing the snapshot framework singleton,
+ensuring it is initialized.
+
+Because your snapshot module must extend the WPConfigSnapshotModule
+class provided by the framework, it's important to access the singleton first, so you can be
+sure the base class you are extending has been loaded already.
+
+Following that, the initialize method requires the snapshot module class file, instantiates an object using that class, adds
+the call\_render\_ui method (provided by the base class) to the correct action hook to determine where the ui should be displayed,
+and registers the snapshot module with the snapshot framework.
+
+### Snapshot module class file
+
+By looking at the plugin snapshot module class
+([PluginSnapshot.php](https://github.com/beezee/wp_config_snapshots/blob/master/PluginSnapshot.php),
+you can see how little code is required to create a snapshot module. The contents are below:
+
+    <?php
+    
+    class PluginSnapshot extends WPConfigSnapshotModule
+    {
+        public function label()
+        {
+            return "Active Plugin";
+        }
+        
+        public function type()
+        {
+            return "active_plugin";
+        }
+        
+        public function take_snapshot()
+        {
+            return get_option('active_plugins');
+        }
+        
+        public function  restore_snapshot($value)
+        {
+            update_option('active_plugins', $value);
+        }
+        
+        public function deprecated_check($vco)
+        {
+            global $wp_version;
+            $vco->current_version($wp_version);
+            $vco->supported_version('3.4.1');
+            $vco->deprecated_message(
+                'Notice: The Plugin Snapshot framework is only supported to WP version 3.4. Please check for updates.');
+            $vco->set_block_ui(false);
+            return $vco;
+        }
+    }
+    
+Breaking down each method in order of appearance:
+    
+*   **label** - this is the name of the snapshot type for display in the ui. The plugin snapshot module ui will have a heading of
+    Active Plugin Settings Snapshots, where the "Active Plugin" part is taken from the return value of this method.
+*   **type** - this is the index to be used by the framework for referring save and restore requests to your module. It's never user
+    facing, but it should be unique among any installed snapshot modules to prevent conflicts.
+*   **take\_snapshot** - this method should collect the data that comprises a new snapshot and return it to the framework.
+*   **restore\_snapshot** - this method accepts a snapshot in the same form returned by the take\_snapshot method as an
+    argument, and puts it back in the database where it was initially collected from, to restore the state that existed when the
+    snapshot was taken.
+*   **deprecated\_check** - this method allows you to define a supported version, check a current version, provide a deprecated notice
+    and determine whether deprecation should block the snapshot ui for your module. It accepts a snapshot version control object
+    which gives you a set of methods to use to configure deprecation behavior. This is discussed in detail below.
+    
+###Snapshot version check object
+    
+The following methods available on the version check object allow you to configure deprecation behavior of your snapshot module:
+    
+*   **current\_version** - this lets you inform the snapshot framework of a current version to check against. If your snapshot module
+    works with native WP data, you'll want to set this to the current WP version. If you're working with data from another plugin
+    or a theme, you'll want to pass in the version of the software that your snapshot interacts with.
+*   **supported\_version** - this is the version your snapshot is known to work with. If this is not equal to the value passed to
+    current\_version, the deprecated message will be shown.
+*   **deprecated\_message** - This method returns the text to be displayed if the deprecation check returns positive.
+*   **block\_ui** - This method accepts a boolean, and if true, will show the value passed to deprecated\_message in place of the
+    ui for your snapshot module. If false the message will be shown underneath the ui, which will continue to operate as usual.
+    
+For issues or to contribute, [find the source on Github](https://github.com/beezee/wp_config_snapshots)
+
+</xmp>
+<script src="http://strapdownjs.com/v/0.1/strapdown.js"></script>
+</html>
