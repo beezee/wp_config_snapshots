@@ -26,4 +26,15 @@ class PluginSnapshot extends WPConfigSnapshotModule
     {
         update_option('active_plugins', $value);
     }
+    
+    public function deprecated_check($vco)
+    {
+        global $wp_version;
+        $vco->current_version($wp_version);
+        $vco->supported_version('3.4.1');
+        $vco->deprecated_message(
+            'Notice: The Plugin Snapshot framework is only supported to WP version 3.4. Please check for updates.');
+        $vco->set_block_ui(false);
+        return $vco;
+    }
 }

@@ -2,6 +2,7 @@
 <h3 class="hndle"><span><!-- label --><!-- /label --> Settings Snapshots</span></h3>
 <div class="inside">
 	<div data-type="<!-- type --><!-- /type -->">
+		<!-- ui_block -->
 		<p>
 			<select class="wp_settings_snapshot_select" >
 				<!-- existing_snapshot_option -->
@@ -14,6 +15,12 @@
 			<input type="text" class="new_snapshot_name" />
 			<input type="button" class="button take_snapshot" value="Take a snapshot" />
 		</p>
+		<p>
+			<!-- dep_note -->
+			
+			<!-- /dep_note -->
+		</p>
+		<!-- /ui_block -->
 	</div>
 </div>
 </div>

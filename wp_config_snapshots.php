@@ -148,8 +148,6 @@ class WPConfigSnapshotModule
     
     private function render_ui()
     {
-        $version_check_object = new WPConfigSnapshotVersionCheck();
-        $deprecated = $this->deprecated_check($version_check_object);
         $output = new wpsStamp(wpsStamp::load(dirname(__FILE__).'/views/ui.tpl'));
         $option = get_option('wp_config_snapshots');
         $select_options = '';
@@ -159,6 +157,9 @@ class WPConfigSnapshotModule
             $select_options .= "<option $selected value='".$snapshot->name()."'>".$snapshot->name()."</option>";
         }
         if (trim($select_options) !== '') $output = $output->replace('existing_snapshot_option', $select_options);
+        $version_check = $this->deprecated_check(new WPConfigSnapshotVersionCheck());
+        if ($version_check->is_deprecated())
+            $output = $output->replace($version_check->deprecated_ui_block(), $version_check->deprecated_message());
         echo $output->replace('label', $this->label())->replace('type', $this->type());
     }
     
@@ -222,7 +223,7 @@ class WPConfigSnapshot
 
 class WPConfigSnapshotVersionCheck
 {
-    private $_current_version, $_supported_version, $_deprecated_message;
+    private $_current_version, $_supported_version, $_deprecated_message, $_block_ui;
     
     public function current_version($version)
     {
@@ -234,8 +235,24 @@ class WPConfigSnapshotVersionCheck
         $this->_supported_version = $version;
     }
     
-    public function deprecated_message($message)
+    public function set_block_ui($bool)
     {
+        $this->_block_ui = $bool;
+    }
+    
+    public function block_ui()
+    {
+        return $this->_block_ui;
+    }
+    
+    public function deprecated_ui_block()
+    {
+        return ($this->_block_ui) ? 'ui_block' : 'dep_note';
+    }
+    
+    public function deprecated_message($message=false)
+    {
+        if (!$message) return $this->_deprecated_message;
         $this->_deprecated_message = $message;
     }
     
