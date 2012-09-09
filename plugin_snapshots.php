@@ -16,7 +16,7 @@ class PluginSnapshotPlugin
         $p = WPConfigSnapshotPlugin::instance();
         require_once(dirname(__FILE__).'/PluginSnapshot.php');
         $ps = new PluginSnapshot();
-        add_action('pre_current_active_plugins', array($ps, 'ui'));
+        add_action('pre_current_active_plugins', array($ps, 'call_render_ui'));
         $p->register_snapshot_module($ps);
     }
 }

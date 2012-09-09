@@ -12,11 +12,6 @@ class PluginSnapshot extends WPConfigSnapshotModule
         return "active_plugin";
     }
     
-    public function ui()
-    {
-        $this->call_render_ui();
-    }
-    
     public function take_snapshot()
     {
         return get_option('active_plugins');
