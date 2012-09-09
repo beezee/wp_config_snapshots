@@ -19,6 +19,7 @@ class testSnapshot extends WPConfigSnapshotModule
     {
         global $ran_deprecation_check;
         $ran_deprecation_check = true;
+        return $version_check_object;
     }
     
     public function ui_action_hook()

@@ -81,11 +81,17 @@ class WPConfigSnapshotPlugin
         return $snapshots;
     }
     
-    public function take_snapshot($type=false, $name=false)
+    public function validate_snapshot_request($type=false, $name=false)
     {
         if (!isset($type) or !$this->module_is_valid($type))
             return new wpcsAjaxResponse('failed', 'Invalid snapshot type provided.');
-        if (!isset($name) or trim($name) === '') return new wpcsAjaxResponse('failed', 'Snapshot name is required.');
+        if (!isset($name)) return new wpcsAjaxResponse('failed', 'Invalid snapshot name provided.');
+        return false;
+    }
+    
+    public function take_snapshot($type=false, $name=false)
+    {
+        if ($invalid = $this->validate_snapshot_request($type, $name)) return $invalid;
         $option = get_option('wp_config_snapshots');
         $option[$type] = $this->clear_active_snapshot($option[$type]);
         $option[$type][$name] = new WPConfigSnapshot($name, $this->_snapshot_modules[$type]->take_snapshot(), true);
@@ -101,9 +107,7 @@ class WPConfigSnapshotPlugin
     
     public function restore_snapshot($type=false, $name=false)
     {
-        if (!isset($type) or !$this->module_is_valid($type))
-            return new wpcsAjaxResponse('failed', 'Invalid snapshot type provided.');
-        if (!isset($name)) return new wpcsAjaxResponse('failed', 'Invalid snapshot name provided.');
+        if ($invalid = $this->validate_snapshot_request($type, $name)) return $invalid;
         $option = get_option('wp_config_snapshots');
         if (!isset($option[$type]) or !isset($option[$type][$name]) or !is_callable(array($option[$type][$name], 'value')))
             return new wpcsAjaxResponse('failed', 'Could not load the specified snapshot from the database.');
